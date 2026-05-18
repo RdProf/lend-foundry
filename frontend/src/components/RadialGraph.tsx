@@ -127,8 +127,8 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
               x2={polarToXY(cx, cy, DOMAIN_RADIUS, z.angle).x}
               y2={polarToXY(cx, cy, DOMAIN_RADIUS, z.angle).y}
             >
-              <stop offset="0%" stopColor={zoneColor} stopOpacity="0.03" />
-              <stop offset="100%" stopColor={zoneColor} stopOpacity="0.75" />
+              <stop offset="0%" stopColor={zoneColor} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={zoneColor} stopOpacity="1" />
             </linearGradient>
           );
         })}
@@ -366,7 +366,7 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
             {/* Bad zone pulsing ring */}
             {zoneSeverity === "bad" && !isZoneMissing && !isSelected && (
               <circle cx={cx} cy={cy} r={r + 13} fill="none"
-                stroke={zoneColor} strokeWidth="1.5"
+                stroke="#EF4444" strokeWidth="1.5"
                 style={{ animation: `${uid}badPulse 2.2s ease-in-out infinite` }} />
             )}
             {/* Selected halo */}
@@ -414,7 +414,7 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
             {/* Severity badge */}
             {zoneSeverity === "bad" && !isZoneMissing && !isSelected && (
               <g>
-                <circle cx={cx + r - 4} cy={cy - r + 4} r={7} fill={zoneColor} />
+                <circle cx={cx + r - 4} cy={cy - r + 4} r={7} fill="#EF4444" stroke="#FFFFFF" strokeWidth="1.5" />
                 <text x={cx + r - 4} y={cy - r + 8.5} textAnchor="middle"
                   fontSize="9" fontWeight="800" fill="white" style={{ pointerEvents: "none" }}>!</text>
               </g>

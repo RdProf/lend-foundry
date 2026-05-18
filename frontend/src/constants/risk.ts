@@ -11,33 +11,33 @@ type ColorSet = {
 
 export const riskColors: Record<RiskLevel, ColorSet> = {
   healthy: {
-    bg: "#DCFCE7",
+    bg: "#FFFFFF",
     text: "#15803D",
-    border: "#86EFAC",
+    border: "#22C55E",
     dot: "#16A34A",
     arc: "#22C55E",
-    ring: "#BBF7D0",
+    ring: "#DCFCE7",
   },
   moderate: {
-    bg: "#FEF9C3",
+    bg: "#FFFFFF",
     text: "#92400E",
-    border: "#FDE68A",
+    border: "#F59E0B",
     dot: "#D97706",
     arc: "#FBBF24",
-    ring: "#FDE68A",
+    ring: "#FEF3C7",
   },
   high: {
-    bg: "#FEE2E2",
+    bg: "#FFFFFF",
     text: "#991B1B",
-    border: "#FCA5A5",
+    border: "#EF4444",
     dot: "#DC2626",
     arc: "#EF4444",
-    ring: "#FECACA",
+    ring: "#FEE2E2",
   },
 };
 
-export const severityStyle: Record<MetricSeverity, Pick<ColorSet, "bg" | "text">> = {
-  good: { text: "#15803D", bg: "#DCFCE7" },
-  neutral: { text: "#4B5563", bg: "#F3F4F6" },
-  bad: { text: "#991B1B", bg: "#FEE2E2" },
+export const severityStyle: Record<MetricSeverity, Pick<ColorSet, "bg" | "text" | "border">> = {
+  good: { text: "#15803D", bg: "#FFFFFF", border: "#22C55E" },
+  neutral: { text: "#475569", bg: "#FFFFFF", border: "#CBD5E1" },
+  bad: { text: "#B91C1C", bg: "#FFFFFF", border: "#EF4444" },
 };

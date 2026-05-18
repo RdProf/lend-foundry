@@ -4,8 +4,8 @@ export const zones = [
     label: "Credit Risk",
     // Slightly north-west — most visually dominant zone
     angle: -100,
-    color: "#DC2626",
-    accentColor: "#FEE2E2",
+    color: "#2563EB", // Blue
+    accentColor: "#DBEAFE",
     icon: "◈",
     description: "Credit quality and delinquency signals",
   },
@@ -14,8 +14,8 @@ export const zones = [
     label: "Business Health",
     // North-east, balanced counterpart to credit
     angle: -35,
-    color: "#16A34A",
-    accentColor: "#DCFCE7",
+    color: "#7C3AED", // Violet
+    accentColor: "#EDE9FE",
     icon: "◉",
     description: "Operational stability and longevity",
   },
@@ -24,8 +24,8 @@ export const zones = [
     label: "Loan Exposure",
     // South-east
     angle: 55,
-    color: "#2563EB",
-    accentColor: "#DBEAFE",
+    color: "#DB2777", // Pink
+    accentColor: "#FCE7F3",
     icon: "◐",
     description: "Outstanding loan volume and portfolio risk",
   },
@@ -34,8 +34,8 @@ export const zones = [
     label: "Repayment",
     // South-west
     angle: 145,
-    color: "#D97706",
-    accentColor: "#FEF3C7",
+    color: "#0D9488", // Teal
+    accentColor: "#CCFBF1",
     icon: "◑",
     description: "Payment consistency and behavioral patterns",
   },
@@ -44,8 +44,8 @@ export const zones = [
     label: "Business Profile",
     // West, slightly lower
     angle: 215,
-    color: "#7C3AED",
-    accentColor: "#EDE9FE",
+    color: "#475569", // Slate
+    accentColor: "#F1F5F9",
     icon: "◎",
     description: "Industry, location and business identity",
   },

@@ -393,8 +393,8 @@ function BorrowerRow({ borrower, onSelect }: BorrowerRowProps) {
       <td>
         <div className="flex items-center gap-3">
           <div
-            className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[var(--radius-md)] text-xs font-bold tracking-[0.5px]"
-            style={{ background: colors.bg, color: colors.text }}
+            className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[var(--radius-md)] border text-xs font-bold tracking-[0.5px]"
+            style={{ background: colors.bg, color: colors.text, borderColor: colors.border }}
           >
             {borrower.initials}
           </div>
