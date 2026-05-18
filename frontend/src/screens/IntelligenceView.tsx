@@ -4,6 +4,7 @@ import { InsightCard } from "../components/InsightCard";
 import { riskColors } from "../constants/risk";
 import type { Borrower } from "../types/borrower";
 import type { ZoneMetric } from "../types/borrower";
+import { getUnmappedBorrowerDetailFields } from "../utils/borrowerDetails";
 
 type IntelligenceViewProps = {
   borrower: Borrower;
@@ -51,6 +52,8 @@ export function IntelligenceView({ borrower, onBack }: IntelligenceViewProps) {
 
   const closeInsight = useCallback(() => setInsight(null), []);
   const displayName = borrower.companybusinessname;
+  const unmappedFields = getUnmappedBorrowerDetailFields(borrower);
+  const emptyFieldCount = unmappedFields.filter((field) => field.isEmpty).length;
 
   return (
     <div
@@ -140,30 +143,69 @@ export function IntelligenceView({ borrower, onBack }: IntelligenceViewProps) {
           </span>
         </header>
 
-        <div
-          className="relative flex-1 overflow-hidden shadow-[inset_0_0_80px_rgba(15,23,42,0.025)] [&_svg]:block [&_svg]:h-full [&_svg]:w-full"
-          ref={canvasRef}
-        >
-          {canvasSize.width > 0 && (
-            <RadialGraph
-              borrower={borrower}
-              canvasWidth={canvasSize.width}
-              canvasHeight={canvasSize.height}
-              onMetricClick={handleMetricClick}
-            />
-          )}
-
-          {insight && (
-            <div className="pointer-events-none absolute inset-0 z-20">
-              <InsightCard
-                metric={insight.metric}
-                x={insight.x}
-                y={insight.y}
+        <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
+          <div
+            className="relative min-h-[420px] flex-1 overflow-hidden shadow-[inset_0_0_80px_rgba(15,23,42,0.025)] [&_svg]:block [&_svg]:h-full [&_svg]:w-full"
+            ref={canvasRef}
+          >
+            {canvasSize.width > 0 && (
+              <RadialGraph
+                borrower={borrower}
                 canvasWidth={canvasSize.width}
                 canvasHeight={canvasSize.height}
-                onClose={closeInsight}
+                onMetricClick={handleMetricClick}
               />
-            </div>
+            )}
+
+            {insight && (
+              <div className="pointer-events-none absolute inset-0 z-20">
+                <InsightCard
+                  metric={insight.metric}
+                  x={insight.x}
+                  y={insight.y}
+                  canvasWidth={canvasSize.width}
+                  canvasHeight={canvasSize.height}
+                  onClose={closeInsight}
+                />
+              </div>
+            )}
+          </div>
+
+          {unmappedFields.length > 0 && (
+            <aside className="flex min-h-0 w-full flex-shrink-0 flex-col border-t border-[var(--color-border)] bg-[var(--color-surface)] xl:w-[340px] xl:border-l xl:border-t-0">
+              <div className="border-b border-[var(--color-border-subtle)] px-5 py-4">
+                <h2 className="text-[13px] font-bold uppercase tracking-[0.4px] text-[var(--color-text-primary)]">
+                  Other CSV Fields
+                </h2>
+                <p className="mt-1 text-[11.5px] font-medium text-[var(--color-text-tertiary)]">
+                  {unmappedFields.length} unmapped {emptyFieldCount > 0 ? `· ${emptyFieldCount} with no data` : ""}
+                </p>
+              </div>
+
+              <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-1 gap-3 overflow-y-auto p-4 sm:grid-cols-2 xl:grid-cols-1">
+                {unmappedFields.map((field) => (
+                  <div
+                    key={field.column}
+                    className={`rounded-[var(--radius-md)] border px-3 py-2.5 ${
+                      field.isEmpty
+                        ? "border-dashed border-[var(--color-border)] bg-[#fafbfc]"
+                        : "border-[var(--color-border-subtle)] bg-white"
+                    }`}
+                  >
+                    <div className="mb-1 text-[10.5px] font-bold uppercase tracking-[0.35px] text-[var(--color-text-tertiary)]">
+                      {field.label}
+                    </div>
+                    <div
+                      className={`break-words text-[13px] font-semibold leading-snug ${
+                        field.isEmpty ? "text-[var(--color-text-tertiary)]" : "text-[var(--color-text-primary)]"
+                      }`}
+                    >
+                      {field.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </aside>
           )}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useId } from "react";
+import { useState, useRef, useCallback, useEffect, useId, type CSSProperties } from "react";
 import { zones, type ZoneId } from "../constants/zones";
 import { riskColors } from "../constants/risk";
 import { getZoneMetrics, getZoneSeverity } from "../utils/zoneMetrics";
@@ -18,9 +18,9 @@ const CENTER_R = 68;
 const ZONE_R_BASE = 45;
 const METRIC_R = 22;
 const HEALTH_ARC_R = 82;
-const METRIC_SPREAD = 34;
 
 const PADDING = 30;
+const MISSING_COLOR = "#94A3B8";
 
 function radians(deg: number) {
   return (deg * Math.PI) / 180;
@@ -77,6 +77,8 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
   );
 
   const handleBgClick = useCallback(() => { setSelectedZone(null); }, []);
+  const healthMetric = getZoneMetrics(borrower, "health").find((metric) => metric.column === "borrower_health_index");
+  const healthValue = healthMetric?.isMissing ? "NIL" : `${borrower.borrower_health_index}`;
 
   return (
     <svg
@@ -116,16 +118,20 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
         <pattern id={`${uid}dp`} x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
           <circle cx="1" cy="1" r="0.9" fill="rgba(148,163,184,0.22)" />
         </pattern>
-        {zones.map((z) => (
-          <linearGradient key={z.id} id={`${uid}eg${z.id}`} gradientUnits="userSpaceOnUse"
-            x1={cx} y1={cy}
-            x2={polarToXY(cx, cy, DOMAIN_RADIUS, z.angle).x}
-            y2={polarToXY(cx, cy, DOMAIN_RADIUS, z.angle).y}
-          >
-            <stop offset="0%" stopColor={z.color} stopOpacity="0.03" />
-            <stop offset="100%" stopColor={z.color} stopOpacity="0.75" />
-          </linearGradient>
-        ))}
+        {zones.map((z) => {
+          const zoneColor = getZoneMetrics(borrower, z.id).every((metric) => metric.isMissing) ? MISSING_COLOR : z.color;
+
+          return (
+            <linearGradient key={z.id} id={`${uid}eg${z.id}`} gradientUnits="userSpaceOnUse"
+              x1={cx} y1={cy}
+              x2={polarToXY(cx, cy, DOMAIN_RADIUS, z.angle).x}
+              y2={polarToXY(cx, cy, DOMAIN_RADIUS, z.angle).y}
+            >
+              <stop offset="0%" stopColor={zoneColor} stopOpacity="0.03" />
+              <stop offset="100%" stopColor={zoneColor} stopOpacity="0.75" />
+            </linearGradient>
+          );
+        })}
       </defs>
 
       {/* Background */}
@@ -154,6 +160,8 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
 
       {/* ── EDGES: Center to Zone ── */}
       {zones.map((zone, zi) => {
+        const zoneMetrics = getZoneMetrics(borrower, zone.id);
+        const zoneColor = zoneMetrics.every((metric) => metric.isMissing) ? MISSING_COLOR : zone.color;
         const zonePos = polarToXY(cx, cy, DOMAIN_RADIUS, zone.angle);
         const isSelected = selectedZone === zone.id;
         const isHovered = hoveredZone === zone.id;
@@ -170,14 +178,14 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
             {isActive && !isAnySelected && (
               <path
                 d={`M ${cx} ${cy} Q ${pullX} ${pullY} ${zonePos.x} ${zonePos.y}`}
-                fill="none" stroke={zone.color} strokeWidth="10" strokeLinecap="round"
+                fill="none" stroke={zoneColor} strokeWidth="10" strokeLinecap="round"
                 opacity="0.12" style={{ filter: "blur(4px)" }}
               />
             )}
             <path
               d={`M ${cx} ${cy} Q ${pullX} ${pullY} ${zonePos.x} ${zonePos.y}`}
               fill="none"
-              stroke={isActive ? zone.color : `url(#${uid}eg${zone.id})`}
+              stroke={isActive ? zoneColor : `url(#${uid}eg${zone.id})`}
               strokeWidth={isHovered ? 2.5 : 2}
               strokeDasharray={isActive ? "none" : `${pLen} ${pLen}`}
               strokeLinecap="round"
@@ -198,13 +206,16 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
         if (selectedZone !== zone.id) return null;
         const metrics = getZoneMetrics(borrower, zone.id);
         const SPAWN_RADIUS = 200;
-        return metrics.map((_, i) => {
+        return metrics.map((metric, i) => {
           const metricAngle = -90 + (i * (360 / metrics.length));
           const metricPos = polarToXY(cx, cy, SPAWN_RADIUS, metricAngle);
           return (
             <line key={`em${zone.id}${i}`}
               x1={cx} y1={cy} x2={metricPos.x} y2={metricPos.y}
-              stroke={zone.color} strokeWidth="1.5" strokeDasharray="4 4" opacity="0.4"
+              stroke={metric.isMissing ? MISSING_COLOR : zone.color}
+              strokeWidth="1.5"
+              strokeDasharray="4 4"
+              opacity={metric.isMissing ? "0.28" : "0.4"}
               style={{ animation: `${uid}slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${i * 0.06}s both` }}
             />
           );
@@ -220,9 +231,11 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
           const metricAngle = -90 + (i * (360 / metrics.length));
           const pos = polarToXY(cx, cy, SPAWN_RADIUS, metricAngle);
           const isHov = hoveredMetric === `${zone.id}-${i}`;
+          const metricColor = metric.isMissing ? MISSING_COLOR : zone.color;
 
           const severityColor =
-            metric.severity === "good" ? "#16A34A" :
+            metric.isMissing ? MISSING_COLOR :
+              metric.severity === "good" ? "#16A34A" :
               metric.severity === "bad" ? "#DC2626" : "#64748B";
 
           const CARD_W = 120;
@@ -251,24 +264,24 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
                 {/* Hover glow */}
               {isHov && (
                 <rect x={cx_ - 6} y={cy_ - 6} width={CARD_W + 12} height={CARD_H + 12}
-                  rx={16} fill={zone.color} opacity="0.10" />
+                  rx={16} fill={metricColor} opacity="0.10" />
               )}
 
               {/* Solid base to hide overlapping lines */}
               <rect x={cx_} y={cy_} width={CARD_W} height={CARD_H}
-                rx={12} fill="#FFFFFF" filter={`url(#${uid}ms)`} />
+                rx={12} fill={metric.isMissing ? "#F8FAFC" : "#FFFFFF"} filter={`url(#${uid}ms)`} />
 
               {/* Card background — zone-tinted */}
               <rect x={cx_} y={cy_} width={CARD_W} height={CARD_H}
                 rx={12}
-                fill={`${zone.color}10`}
-                stroke={isHov ? zone.color : `${zone.color}40`}
+                fill={metric.isMissing ? "#F8FAFC" : `${zone.color}10`}
+                stroke={isHov ? metricColor : metric.isMissing ? "#CBD5E1" : `${zone.color}40`}
                 strokeWidth={isHov ? 2 : 1.5}
               />
 
               {/* Top accent bar — zone color full */}
-              <rect x={cx_} y={cy_} width={CARD_W} height={5} rx={3} fill={zone.color} />
-              <rect x={cx_} y={cy_ + 3} width={CARD_W} height={2} fill={zone.color} />
+              <rect x={cx_} y={cy_} width={CARD_W} height={5} rx={3} fill={metricColor} />
+              <rect x={cx_} y={cy_ + 3} width={CARD_W} height={2} fill={metricColor} />
 
               {/* Severity dot */}
               <circle cx={pos.x + CARD_W / 2 - 12} cy={cy_ + 14} r={4}
@@ -278,7 +291,7 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
               <text x={pos.x} y={cy_ + 26}
                 textAnchor="middle" fontSize="8.5" fontWeight="700"
                 fontFamily="Inter, sans-serif"
-                fill={zone.color} letterSpacing="0.3"
+                fill={metricColor} letterSpacing="0.3"
                 style={{ pointerEvents: "none" }}>
                 {metric.label.toUpperCase()}
               </text>
@@ -287,13 +300,13 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
               <line
                 x1={cx_ + 12} y1={cy_ + 34}
                 x2={cx_ + CARD_W - 12} y2={cy_ + 34}
-                stroke={zone.color} strokeWidth="0.75" opacity="0.3"
+                stroke={metricColor} strokeWidth="0.75" opacity="0.3"
               />
 
               {/* Value */}
               <text x={pos.x} y={cy_ + 54}
                 textAnchor="middle" fontSize="14" fontWeight="800"
-                fontFamily="Inter, sans-serif" fill="#0F172A" letterSpacing="-0.4"
+                fontFamily="Inter, sans-serif" fill={metric.isMissing ? "#64748B" : "#0F172A"} letterSpacing="-0.4"
                 style={{ pointerEvents: "none" }}>
                 {metric.value}
               </text>
@@ -301,7 +314,7 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
               {/* Sub label */}
               <text x={pos.x} y={cy_ + 70}
                 textAnchor="middle" fontSize="9" fontWeight="500"
-                fontFamily="Inter, sans-serif" fill={zone.color} opacity={0.65}
+                fontFamily="Inter, sans-serif" fill={metricColor} opacity={0.65}
                 style={{ pointerEvents: "none" }}>
                 {metric.sub}
               </text>
@@ -313,6 +326,9 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
 
       {/* ── ZONE NODES ── */}
       {zones.map((zone, zi) => {
+        const zoneMetrics = getZoneMetrics(borrower, zone.id);
+        const isZoneMissing = zoneMetrics.every((metric) => metric.isMissing);
+        const zoneColor = isZoneMissing ? MISSING_COLOR : zone.color;
         const isSelected = selectedZone === zone.id;
         const isHovered = hoveredZone === zone.id;
         const isAnySelected = selectedZone !== null;
@@ -324,10 +340,10 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
         const dx = targetPos.x - cx;
         const dy = targetPos.y - cy;
         const opacity = isAnySelected && !isSelected ? 0 : 1;
-        const pointerEvents = isAnySelected && !isSelected ? "none" : "auto";
+        const pointerEvents: CSSProperties["pointerEvents"] = isAnySelected && !isSelected ? "none" : "auto";
 
         const zoneSeverity = getZoneSeverity(borrower, zone.id);
-        const severityBonus = zoneSeverity === "bad" ? 6 : zoneSeverity === "good" ? 2 : 0;
+        const severityBonus = !isZoneMissing && zoneSeverity === "bad" ? 6 : !isZoneMissing && zoneSeverity === "good" ? 2 : 0;
         const r = ZONE_R_BASE + severityBonus + (isHovered && !isSelected ? 4 : 0);
 
         return (
@@ -338,7 +354,7 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
               transform: `translate(${dx}px, ${dy}px) scale(${isSelected ? 1.65 : 1})`,
               transformOrigin: `${cx}px ${cy}px`,
               opacity: opacity,
-              pointerEvents: pointerEvents as any,
+              pointerEvents,
               animation: (animStep >= 2 && !isAnySelected)
                 ? `${uid}nodePop 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${0.05 + zi * 0.07}s both`
                 : "none",
@@ -348,15 +364,15 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
             onMouseLeave={() => setHoveredZone(null)}
           >
             {/* Bad zone pulsing ring */}
-            {zoneSeverity === "bad" && !isSelected && (
+            {zoneSeverity === "bad" && !isZoneMissing && !isSelected && (
               <circle cx={cx} cy={cy} r={r + 13} fill="none"
-                stroke={zone.color} strokeWidth="1.5"
+                stroke={zoneColor} strokeWidth="1.5"
                 style={{ animation: `${uid}badPulse 2.2s ease-in-out infinite` }} />
             )}
             {/* Selected halo */}
             {isSelected && (
-              <circle cx={cx} cy={cy} r={r + 20} fill={`${zone.color}14`}
-                stroke={`${zone.color}30`} strokeWidth="1.5"
+              <circle cx={cx} cy={cy} r={r + 20} fill={`${zoneColor}14`}
+                stroke={`${zoneColor}30`} strokeWidth="1.5"
                 style={{
                   transformOrigin: `${cx}px ${cy}px`,
                   animation: `${uid}selectedPulse 2.5s ease-in-out infinite`
@@ -364,27 +380,27 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
             )}
             {/* Hover glow */}
             {isHovered && !isSelected && (
-              <circle cx={cx} cy={cy} r={r + 10} fill={`${zone.color}10`}
-                stroke={`${zone.color}22`} strokeWidth="1" />
+              <circle cx={cx} cy={cy} r={r + 10} fill={`${zoneColor}10`}
+                stroke={`${zoneColor}22`} strokeWidth="1" />
             )}
             {/* Main circle */}
             <circle cx={cx} cy={cy} r={r}
-              fill={isSelected ? zone.color : "#FFFFFF"}
-              stroke={zone.color}
-              strokeWidth={isSelected ? 0 : zoneSeverity === "bad" ? 2.5 : 2}
+              fill={isSelected ? zoneColor : "#FFFFFF"}
+              stroke={zoneColor}
+              strokeWidth={isSelected ? 0 : !isZoneMissing && zoneSeverity === "bad" ? 2.5 : 2}
               filter={`url(#${uid}ns)`}
               style={{ transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)" }} />
             {/* Icon */}
             <text x={cx} y={cy - 11} textAnchor="middle"
               fontSize="18" fontWeight="700" fontFamily="Inter, sans-serif"
-              fill={isSelected ? "#FFFFFF" : zone.color}
+              fill={isSelected ? "#FFFFFF" : zoneColor}
               style={{ pointerEvents: "none", transition: "fill 0.3s ease" }}>
               {zone.icon}
             </text>
             {/* Label line 1 */}
             <text x={cx} y={cy + 6} textAnchor="middle"
               fontSize="11.5" fontWeight="800" fontFamily="Inter, sans-serif"
-              fill={isSelected ? "rgba(255,255,255,0.95)" : "#1E293B"} letterSpacing="0.4"
+              fill={isSelected ? "rgba(255,255,255,0.95)" : isZoneMissing ? "#64748B" : "#1E293B"} letterSpacing="0.4"
               style={{ pointerEvents: "none" }}>
               {zone.label.split(" ")[0].toUpperCase()}
             </text>
@@ -396,9 +412,9 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
               {zone.label.split(" ").slice(1).join(" ").toUpperCase()}
             </text>
             {/* Severity badge */}
-            {zoneSeverity === "bad" && !isSelected && (
+            {zoneSeverity === "bad" && !isZoneMissing && !isSelected && (
               <g>
-                <circle cx={cx + r - 4} cy={cy - r + 4} r={7} fill={zone.color} />
+                <circle cx={cx + r - 4} cy={cy - r + 4} r={7} fill={zoneColor} />
                 <text x={cx + r - 4} y={cy - r + 8.5} textAnchor="middle"
                   fontSize="9" fontWeight="800" fill="white" style={{ pointerEvents: "none" }}>!</text>
               </g>
@@ -417,12 +433,14 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
       }}>
         {mounted && (
           <HealthArc cx={cx} cy={cy} r={HEALTH_ARC_R}
-            value={borrower.borrower_health_index} riskLevel={borrower.riskLevel} strokeWidth={6} />
+            value={healthMetric?.isMissing ? 0 : borrower.borrower_health_index}
+            riskLevel={healthMetric?.isMissing ? "moderate" : borrower.riskLevel}
+            strokeWidth={6} />
         )}
         <circle cx={cx} cy={cy} r={CENTER_R + 8} fill="none"
-          stroke={riskColor.ring} strokeWidth="1.5" opacity="0.55" />
+          stroke={healthMetric?.isMissing ? "#CBD5E1" : riskColor.ring} strokeWidth="1.5" opacity="0.55" />
         <circle cx={cx} cy={cy} r={CENTER_R}
-          fill={`url(#${uid}cg)`} stroke={riskColor.border} strokeWidth="2.5"
+          fill={`url(#${uid}cg)`} stroke={healthMetric?.isMissing ? "#CBD5E1" : riskColor.border} strokeWidth="2.5"
           filter={`url(#${uid}cs)`} />
         {/* Initials */}
         <text x={cx} y={cy - 16} textAnchor="middle"
@@ -435,12 +453,14 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
         {/* Value */}
         <text x={cx} y={cy + 22} textAnchor="middle"
           fontSize="26" fontWeight="800" fontFamily="Inter, sans-serif"
-          fill={riskColor.dot} letterSpacing="-1">{borrower.borrower_health_index}</text>
+          fill={healthMetric?.isMissing ? MISSING_COLOR : riskColor.dot} letterSpacing="-1">{healthValue}</text>
         {/* Badge */}
-        <rect x={cx - 36} y={cy + 28} width={72} height={20} rx={10} fill={riskColor.bg} />
+        <rect x={cx - 36} y={cy + 28} width={72} height={20} rx={10} fill={healthMetric?.isMissing ? "#F1F5F9" : riskColor.bg} />
         <text x={cx} y={cy + 42} textAnchor="middle"
           fontSize="8.5" fontWeight="700" fontFamily="Inter, sans-serif"
-          fill={riskColor.text} letterSpacing="0.5">{borrower.riskLabel.toUpperCase()}</text>
+          fill={healthMetric?.isMissing ? "#64748B" : riskColor.text} letterSpacing="0.5">
+          {healthMetric?.isMissing ? "NO DATA" : borrower.riskLabel.toUpperCase()}
+        </text>
       </g>
 
       {/* ── Hint text ── */}

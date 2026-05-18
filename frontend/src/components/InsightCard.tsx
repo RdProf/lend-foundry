@@ -46,17 +46,20 @@ export function InsightCard({ metric, x, y, canvasWidth, canvasHeight, onClose }
   }, [onClose]);
 
   const severityLabel =
-    metric.severity === "good" ? "Positive Signal"
+    metric.isMissing ? "No Data"
+      : metric.severity === "good" ? "Positive Signal"
       : metric.severity === "bad" ? "Risk Flag"
         : "Neutral";
 
   const dotColor =
-    metric.severity === "good" ? "#16A34A"
+    metric.isMissing ? "#94A3B8"
+      : metric.severity === "good" ? "#16A34A"
       : metric.severity === "bad" ? "#DC2626"
         : "#6B7280";
 
   const accentBg =
-    metric.severity === "good" ? "rgba(22,163,74,0.06)"
+    metric.isMissing ? "rgba(148,163,184,0.12)"
+      : metric.severity === "good" ? "rgba(22,163,74,0.06)"
       : metric.severity === "bad" ? "rgba(220,38,38,0.06)"
         : "rgba(100,116,139,0.06)";
 
@@ -81,7 +84,7 @@ export function InsightCard({ metric, x, y, canvasWidth, canvasHeight, onClose }
       </div>
 
       <div className="mb-1 flex items-end gap-[10px] px-[18px]">
-        <div className="text-[32px] font-extrabold leading-none tracking-[-1.5px] text-[var(--color-text-primary)]">
+        <div className={`text-[32px] font-extrabold leading-none tracking-[-1.5px] ${metric.isMissing ? "text-[var(--color-text-tertiary)]" : "text-[var(--color-text-primary)]"}`}>
           {metric.value}
         </div>
         <div

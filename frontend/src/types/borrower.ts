@@ -1,6 +1,8 @@
 export type RiskLevel = "healthy" | "moderate" | "high";
 export type DelinquencyLevel = "none" | "minor" | "moderate" | "severe";
 export type MetricSeverity = "good" | "neutral" | "bad";
+export type CsvCellValue = string | number | null | undefined;
+export type CsvRowValues = Record<string, CsvCellValue>;
 
 export type RawBorrower = {
   borrowerid: string;
@@ -21,6 +23,8 @@ export type RawBorrower = {
   business_size_score: number;
   borrower_health_index: number;
   avgannualinterestrate: number;
+  csvColumns?: string[];
+  csvValues?: CsvRowValues;
 };
 
 export type Borrower = RawBorrower & {
@@ -34,9 +38,11 @@ export type Borrower = RawBorrower & {
 };
 
 export type ZoneMetric = {
+  column?: string;
   label: string;
   value: string;
   sub: string;
   severity: MetricSeverity;
   interpretation: string;
+  isMissing?: boolean;
 };

@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef } from "react";
 import Papa from "papaparse";
 import { mapBorrower } from "../utils/borrowerMapper";
 import type { RawBorrower } from "../types/borrower";
@@ -12,6 +12,7 @@ type DiscoveryScreenProps = {
 type RiskFilter = RiskLevel | "all";
 type SortKey = "borrower_health_index" | "ficoscore" | "total_loan_amount" | "maxdpd";
 type SortDirection = "asc" | "desc";
+type ImportedCsvRow = Record<string, string | undefined>;
 
 const tableColumns: Array<{ label: string; key?: SortKey }> = [
   { label: "Business" },
@@ -50,15 +51,11 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
   const itemsPerPage = 12;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [query, riskFilter, sortDir, sortKey, borrowerList]);
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    Papa.parse<any>(file, {
+    Papa.parse<ImportedCsvRow>(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
@@ -67,26 +64,32 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
           return;
         }
 
+        const csvColumns = results.meta.fields?.filter(Boolean) ?? [];
         const parsedData = results.data.map((row) => {
+          const csvValues = Object.fromEntries(
+            csvColumns.map((column) => [column, normalizeCsvCell(row[column])])
+          );
           const raw: RawBorrower = {
-            borrowerid: row.borrowerid || "",
-            companybusinessname: row.companybusinessname || "",
-            city: row.city || "",
-            state: row.state || "",
-            industry: row.industry || "",
-            ficoscore: row.ficoscore ? Number(row.ficoscore) : null,
-            timeinbusiness: Number(row.timeinbusiness) || 0,
-            latestannualrevenue: Number(row.latestannualrevenue) || 0,
-            total_loan_amount: Number(row.total_loan_amount) || 0,
-            active_loans: Number(row.active_loans) || 0,
-            maxdpd: Number(row.maxdpd) || 0,
-            avgdpd: Number(row.avgdpd) || 0,
-            repayment_score: Number(row.repayment_score) || 0,
-            stability_score: Number(row.stability_score) || 0,
-            exposure_score: Number(row.exposure_score) || 0,
-            business_size_score: Number(row.business_size_score) || 0,
-            borrower_health_index: Number(row.borrower_health_index) || 0,
-            avgannualinterestrate: Number(row.avgannualinterestrate) || 0,
+            borrowerid: csvValues.borrowerid || "",
+            companybusinessname: csvValues.companybusinessname || "",
+            city: csvValues.city || "",
+            state: csvValues.state || "",
+            industry: csvValues.industry || "",
+            ficoscore: parseNullableNumber(csvValues.ficoscore),
+            timeinbusiness: parseNumber(csvValues.timeinbusiness),
+            latestannualrevenue: parseNumber(csvValues.latestannualrevenue),
+            total_loan_amount: parseNumber(csvValues.total_loan_amount),
+            active_loans: parseNumber(csvValues.active_loans),
+            maxdpd: parseNumber(csvValues.maxdpd),
+            avgdpd: parseNumber(csvValues.avgdpd),
+            repayment_score: parseNumber(csvValues.repayment_score),
+            stability_score: parseNumber(csvValues.stability_score),
+            exposure_score: parseNumber(csvValues.exposure_score),
+            business_size_score: parseNumber(csvValues.business_size_score),
+            borrower_health_index: parseNumber(csvValues.borrower_health_index),
+            avgannualinterestrate: parseNumber(csvValues.avgannualinterestrate),
+            csvColumns,
+            csvValues,
           };
           return mapBorrower(raw);
         });
@@ -94,6 +97,7 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
         try {
           localStorage.setItem("borrowerData", JSON.stringify(parsedData));
           setBorrowerList(parsedData);
+          setCurrentPage(1);
         } catch (error) {
           console.error("Failed to save to localStorage", error);
           alert("CSV is too large to save in local storage.");
@@ -115,7 +119,8 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
           b.companybusinessname.toLowerCase().includes(q) ||
           b.borrowerid.toLowerCase().includes(q) ||
           b.city.toLowerCase().includes(q) ||
-          b.state.toLowerCase().includes(q)
+          b.state.toLowerCase().includes(q) ||
+          Object.values(b.csvValues ?? {}).some((value) => String(value ?? "").toLowerCase().includes(q))
       );
     }
     if (riskFilter !== "all") {
@@ -126,7 +131,7 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
       const vb = b[sortKey] ?? 0;
       return sortDir === "asc" ? va - vb : vb - va;
     });
-  }, [query, riskFilter, sortDir, sortKey]);
+  }, [borrowerList, query, riskFilter, sortDir, sortKey]);
 
   const counts = useMemo(
     () => ({
@@ -148,10 +153,12 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      setCurrentPage(1);
       return;
     }
     setSortKey(key);
     setSortDir("desc");
+    setCurrentPage(1);
   };
 
   const SortIcon = ({ col }: { col: SortKey }) => {
@@ -245,7 +252,10 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
             <input
               id="borrower-search"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Search by name, ID, city or state..."
               autoComplete="off"
               className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] py-[10px] pl-10 pr-[14px] text-[13.5px] font-normal text-[var(--color-text-primary)] shadow-[var(--shadow-xs)] outline-none transition-[border-color,box-shadow] duration-150 ease-[var(--ease-smooth)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:shadow-[0_0_0_3px_rgba(79,110,247,0.1)]"
@@ -268,7 +278,10 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
                   ? "border-[var(--color-accent)] bg-[var(--color-accent-bg)] text-[var(--color-accent)]"
                   : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[#cbd5e1] hover:bg-[#f8fafc]"
               }`}
-              onClick={() => setRiskFilter(f.key)}
+              onClick={() => {
+                setRiskFilter(f.key);
+                setCurrentPage(1);
+              }}
             >
               {f.label}
               <span className="ml-[5px] opacity-[0.65]">{f.count}</span>
@@ -346,6 +359,21 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
       </main>
     </div>
   );
+}
+
+function normalizeCsvCell(value: string | undefined) {
+  return value?.trim() ?? "";
+}
+
+function parseNumber(value: string | undefined) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseNullableNumber(value: string | undefined) {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 type BorrowerRowProps = {
