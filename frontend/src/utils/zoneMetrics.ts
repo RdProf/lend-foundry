@@ -142,24 +142,6 @@ export function getZoneMetrics(borrower: Borrower, zoneId: ZoneId): ZoneMetric[]
               : "Low or unavailable sales volume. Debt capacity may be constrained.",
       }),
       metric(borrower, {
-        column: "business_size_score",
-        label: "Business Size Score",
-        value: `${borrower.business_size_score}`,
-        sub: "Business size score",
-        severity: borrower.business_size_score >= 60 ? "good" : borrower.business_size_score >= 30 ? "neutral" : "bad",
-        interpretation:
-          borrower.business_size_score >= 60
-            ? "Larger operating profile. More capacity to absorb volatility."
-            : borrower.business_size_score >= 30
-              ? "Mid-sized profile. Capacity should be reviewed against exposure."
-              : "Small business profile. Debt capacity may be limited.",
-      }),
-    ];
-  }
-
-  if (zoneId === "credit") {
-    return [
-      metric(borrower, {
         column: "ficoscore",
         label: "FICO Score",
         value: borrower.ficoscore ? `${borrower.ficoscore}` : "NIL",
@@ -174,6 +156,24 @@ export function getZoneMetrics(borrower: Borrower, zoneId: ZoneId): ZoneMetric[]
                 ? "Fair credit. Monitor for deterioration."
                 : "Poor credit score. Elevated default risk."
           : "No FICO data available. Assess manually.",
+      }),
+    ];
+  }
+
+  if (zoneId === "credit") {
+    return [
+      metric(borrower, {
+        column: "business_size_score",
+        label: "Business Size Score",
+        value: `${borrower.business_size_score}`,
+        sub: "Business size score",
+        severity: borrower.business_size_score >= 60 ? "good" : borrower.business_size_score >= 30 ? "neutral" : "bad",
+        interpretation:
+          borrower.business_size_score >= 60
+            ? "Larger operating profile. More capacity to absorb volatility."
+            : borrower.business_size_score >= 30
+              ? "Mid-sized profile. Capacity should be reviewed against exposure."
+              : "Small business profile. Debt capacity may be limited.",
       }),
       metric(borrower, {
         column: "repayment_score",
