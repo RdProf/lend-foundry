@@ -15,7 +15,7 @@ type RadialGraphProps = {
 const DOMAIN_RADIUS = 180;
 const METRIC_RADIUS = 315;
 const CENTER_R = 68;
-const ZONE_R_BASE = 45;
+const ZONE_R_BASE = 52;
 const METRIC_R = 22;
 const HEALTH_ARC_R = 82;
 
@@ -238,7 +238,7 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
               metric.severity === "good" ? "#16A34A" :
               metric.severity === "bad" ? "#DC2626" : "#64748B";
 
-          const CARD_W = 120;
+          const CARD_W = 150;
           const CARD_H = 86;
           const cx_ = pos.x - CARD_W / 2;
           const cy_ = pos.y - CARD_H / 2;
@@ -399,14 +399,14 @@ export function RadialGraph({ borrower, canvasWidth, canvasHeight, onMetricClick
             </text>
             {/* Label line 1 */}
             <text x={cx} y={cy + 6} textAnchor="middle"
-              fontSize="11.5" fontWeight="800" fontFamily="Inter, sans-serif"
+              fontSize="10" fontWeight="800" fontFamily="Inter, sans-serif"
               fill={isSelected ? "rgba(255,255,255,0.95)" : isZoneMissing ? "#64748B" : "#1E293B"} letterSpacing="0.4"
               style={{ pointerEvents: "none" }}>
               {zone.label.split(" ")[0].toUpperCase()}
             </text>
             {/* Label line 2 */}
             <text x={cx} y={cy + 18} textAnchor="middle"
-              fontSize="10.5" fontWeight="600" fontFamily="Inter, sans-serif"
+              fontSize="9" fontWeight="600" fontFamily="Inter, sans-serif"
               fill={isSelected ? "rgba(255,255,255,0.6)" : "#64748B"} letterSpacing="0.2"
               style={{ pointerEvents: "none" }}>
               {zone.label.split(" ").slice(1).join(" ").toUpperCase()}

@@ -6,21 +6,41 @@ const fallbackBorrowerColumns = [
   "companybusinessname",
   "city",
   "state",
+  "email",
+  "phone",
   "industry",
   "ficoscore",
   "timeinbusiness",
   "latestannualrevenue",
+  "latestannualsales",
   "total_loan_amount",
   "active_loans",
+  "averageinterestrate",
+  "avgtenure",
+  "lastfundedsince",
   "maxdpd",
   "avgdpd",
+  "dpd_bucket",
   "repayment_score",
   "stability_score",
   "exposure_score",
   "business_size_score",
   "borrower_health_index",
-  "avgannualinterestrate",
+  "probability_of_default",
+  "deliquency_probability",
 ];
+
+const columnLabelOverrides: Record<string, string> = {
+  companybusinessname: "Business Name",
+  borrowerid: "Borrower ID",
+  averageinterestrate: "Avg Interest Rate",
+  avgtenure: "Avg Tenure",
+  lastfundedsince: "Last Funded Since",
+  dpd_bucket: "DPD Bucket",
+  deliquency_probability: "Delinquency Probability",
+  probability_of_default: "Probability of Default",
+  latestannualsales: "Annual Sales",
+};
 
 const derivedBorrowerKeys = new Set([
   "riskLevel",
@@ -83,6 +103,8 @@ function isEmptyCell(value: CsvCellValue) {
 }
 
 function formatColumnLabel(column: string) {
+  if (columnLabelOverrides[column]) return columnLabelOverrides[column];
+
   return column
     .replace(/_/g, " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")

@@ -11,13 +11,13 @@ export const zones = [
   },
   {
     id: "health",
-    label: "Business Health",
+    label: "Business Profile",
     // North-east, balanced counterpart to credit
     angle: -35,
     color: "#7C3AED", // Violet
     accentColor: "#EDE9FE",
     icon: "◉",
-    description: "Operational stability and longevity",
+    description: "Business profile and operational metrics",
   },
   {
     id: "exposure",
@@ -31,23 +31,23 @@ export const zones = [
   },
   {
     id: "behavior",
-    label: "Repayment",
+    label: "Delinquency & Payments",
     // South-west
     angle: 145,
     color: "#0D9488", // Teal
     accentColor: "#CCFBF1",
     icon: "◑",
-    description: "Payment consistency and behavioral patterns",
+    description: "Payment performance and delinquency signals",
   },
   {
     id: "identity",
-    label: "Business Profile",
+    label: "Borrower Demographics",
     // West, slightly lower
     angle: 215,
     color: "#475569", // Slate
     accentColor: "#F1F5F9",
     icon: "◎",
-    description: "Industry, location and business identity",
+    description: "Borrower identity and contact details",
   },
 ] as const;
 
