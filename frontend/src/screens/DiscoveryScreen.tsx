@@ -4,9 +4,11 @@ import { mapBorrower } from "../utils/borrowerMapper";
 import type { RawBorrower } from "../types/borrower";
 import { riskColors } from "../constants/risk";
 import type { Borrower, RiskLevel } from "../types/borrower";
+import { useExperienceMode } from "../context/ExperienceModeContext";
 
 type DiscoveryScreenProps = {
-  onSelect: (borrower: Borrower) => void;
+  /** Called when the user selects a borrower row. Shell switches to Intelligence mode. */
+  onSelect?: (borrower: Borrower) => void;
 };
 
 type RiskFilter = RiskLevel | "all";
@@ -31,6 +33,13 @@ const tableHeaderClass =
   "whitespace-nowrap px-[18px] py-[11px] text-left text-[11px] font-bold uppercase tracking-[0.5px] text-[var(--color-text-secondary)]";
 
 export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
+  const { setMode } = useExperienceMode();
+
+  const handleSelect = (borrower: Borrower) => {
+    onSelect?.(borrower);
+    // Switch the shell to Intelligence mode — no modal, no route change
+    setMode("intelligence");
+  };
   const [borrowerList, setBorrowerList] = useState<Borrower[]>(() => {
     const saved = localStorage.getItem("borrowerData");
     if (saved) {
@@ -218,35 +227,32 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
-      <header className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-8">
-        <div className="mx-auto flex h-14 max-w-[1180px] items-center gap-4">
-          <div className="text-[15px] font-extrabold tracking-[-0.3px] text-[var(--color-text-primary)]">
-            Lend<span className="text-[var(--color-accent)]">{"\u00b7"}</span>IQ
-          </div>
-          <div className="h-4 w-px bg-[var(--color-border)]" />
-          <span className="rounded-[var(--radius-full)] bg-[var(--color-accent-bg)] px-[10px] py-[3px] text-[11px] font-semibold tracking-[0.3px] text-[var(--color-accent)]">
-            Borrower Intelligence
-          </span>
-          <div className="ml-auto flex items-center gap-4">
-            <span className="text-xs font-medium text-[var(--color-text-tertiary)]">
-              {borrowerList.length} borrowers
+      {/* ── Header chrome lives in TopToolbar — not duplicated here ── */}
+
+      {/* Hidden file input — CSV import logic is unchanged */}
+      <input
+        type="file"
+        accept=".csv"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        className="hidden"
+        id="discovery-csv-input"
+      />
+
+      {/* Sub-header: borrower count context strip */}
+      <div className="flex items-center gap-3 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-8 py-2.5">
+        <span className="text-[11.5px] font-semibold uppercase tracking-[0.3px] text-[var(--color-text-tertiary)]">
+          Borrower Portfolio
+        </span>
+        {borrowerList.length > 0 && (
+          <>
+            <div className="h-[12px] w-px bg-[var(--color-border)]" />
+            <span className="text-[11.5px] font-medium text-[var(--color-text-tertiary)]">
+              {borrowerList.length} borrowers loaded
             </span>
-            <input
-              type="file"
-              accept=".csv"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-[14px] py-[6px] text-xs font-semibold text-[var(--color-text-secondary)] shadow-[var(--shadow-xs)] transition-all hover:border-[#cbd5e1] hover:bg-[#f8fafc]"
-            >
-              Import CSV
-            </button>
-          </div>
-        </div>
-      </header>
+          </>
+        )}
+      </div>
 
       <main className="mx-auto max-w-[1180px] px-4 py-5 md:px-8 md:pt-7 md:pb-10">
         {borrowerList.length === 0 ? (
@@ -388,7 +394,7 @@ export function DiscoveryScreen({ onSelect }: DiscoveryScreenProps) {
                         <BorrowerRow
                           key={borrower.borrowerid}
                           borrower={borrower}
-                          onSelect={onSelect}
+                          onSelect={handleSelect}
                         />
                       ))
                     )}
